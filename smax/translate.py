@@ -223,17 +223,18 @@ def transitions(state, event=None):
 {%- if transition.condition %}
 if {{transition.condition}}:
     self._state_machine_handle({{event_args|join(", ")}})
-    {{-transition|goto|indent(4)}}
-    return True
+    if \
+        {{-transition|goto|indent(4)}}:
+        return True
 {%- else %}{# transition.condition #}
 self._state_machine_handle({{event_args|join(", ")}})
+r = \
 {{-transition|goto|indent(0)}}
-r = True
 {%- endif %}{# transition.condition #}
 """
     )
     r = []
-    already_has_default_transition = False
+#   already_has_default_transition = False
     for transition in state.transitions:
         if transition.event == event:
             event_args = ["self." + state.full_name + "_name"]
@@ -243,9 +244,9 @@ r = True
             else:
                 event_args.append(None)
                 # there should only be at most one of these.
-                assert not already_has_default_transition
-                if not transition.condition:
-                    already_has_default_transition = True
+#               assert not already_has_default_transition
+#               if not transition.condition:
+#                   already_has_default_transition = True
             r.append(
                 t.render(
                     transition=transition,
@@ -321,6 +322,9 @@ def _{{transition|transition_name}}({{args|insert("self")|join(", ")}}):
     {{ transition.code|code("transition")|indent(4) }}
     {%- if transition.target_state %}
     self._{{transition.target_state|munge("configure")}}()
+    return True
+    {%- else %}{# transition.target_state #}
+    return False
     {%- endif %}{# transition.target_state #}
 """
     )

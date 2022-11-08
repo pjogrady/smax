@@ -213,8 +213,9 @@ parser state_machine:
     rule default_transition<<state>>:
         {{ condition=None }}
         {{ code_clause=None }}
+        {{ state_target=None }}
         ( OPEN_BRACKET condition CLOSE_BRACKET )?
-        TRANSITION state_target<<state>> [ ':' code_clause ]
+        ( TRANSITION state_target<<state>> [ ':' code_clause ] | ':' (code_clause|PASS) )
         {{ state.default_transition(condition, state_target, code_clause) }}
 
     rule timeout<<state>>:
@@ -223,7 +224,7 @@ parser state_machine:
         {{ state_target = None }}
         time_spec<<state>>
         ( OPEN_BRACKET condition CLOSE_BRACKET )?
-        [ TRANSITION state_target<<state>>] [':' code_clause]
+        [ TRANSITION state_target<<state>>] [':' (code_clause|PASS)]
         {{ state.add_timeout(time_spec, condition, state_target, code_clause) }}
 
     rule time_spec<<state>>:
@@ -510,7 +511,7 @@ class State(object):
         self._state = {}
         self._events = {}
         self.events = []
-        self._default_transition = None
+        self._default_transition = []
 
     def check(self, machine):
         # make sure all our inner states have exactly one start state.
@@ -639,11 +640,7 @@ class State(object):
     def default_transition(self, condition, state_target, code_clause):
         t = Transition(self, None, [], condition, state_target, code_clause)
         if condition is None:
-            if self._default_transition:
-                raise SyntaxError(
-                    "State %s has multiple default transitions." % (self.name,)
-                )
-            self._default_transition = t
+            self._default_transition.append(t)
         self.transitions.append(t)
 
     def add_event(self, ev):

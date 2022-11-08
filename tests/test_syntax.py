@@ -3,6 +3,9 @@
 import smax
 import utils
 
+import smax.log
+smax.log.enable_trace = True
+
 r"""
 %%
 
@@ -48,6 +51,25 @@ machine E:
         ---
         *state s_yup:
             enter: self._y = True
+
+machine F:
+    *state s_start:
+        enter:
+            self._a = True
+            self._b = True
+            self._c = False
+            self._z = False
+        exit:
+            self._y = True
+        [self._a]: self._u = True
+        [not self._c]: self._v = True
+        *state s_inner:
+            enter:
+                self._x = True
+                self._y = True
+            exit:
+                self._z = True
+
 %%
 """
 
@@ -86,3 +108,12 @@ def test_syntax():
     reactor.sync()
     assert e._x == True
     assert e._y == True
+    #
+    F = utils.wrap(module.F)
+    f = F(reactor)
+    f.start()
+    reactor.sync()
+    assert f._u == True
+    assert f._v == True
+    assert f._x == True
+    assert f._z == False
